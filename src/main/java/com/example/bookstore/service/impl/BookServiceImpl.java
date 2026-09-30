@@ -1,0 +1,158 @@
+package com.example.bookstore.service.impl;
+
+import com.example.bookstore.dto.book.BookRequest;
+import com.example.bookstore.dto.book.BookResponse;
+import com.example.bookstore.service.BookService;
+import com.example.bookstore.exception.BookAlreadyExistsException;
+import com.example.bookstore.exception.BadRequestException;
+import com.example.bookstore.exception.ResourceNotFoundException;
+import com.example.bookstore.entity.Book;
+import com.example.bookstore.repository.BookRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class BookServiceImpl implements BookService {
+
+    private final BookRepository bookRepository;
+
+    @Value("${app.upload-dir:uploads/books}")
+    private String uploadDir;
+
+    @Override
+    @Transactional
+    public BookResponse createBook(BookRequest request) {
+        if (bookRepository.existsByIsbn(request.getIsbn().trim())) {
+            throw new BookAlreadyExistsException("Book already exists with ISBN: " + request.getIsbn().trim());
+        }
+
+        Book book = new Book();
+        applyRequest(book, request);
+        Book savedBook = bookRepository.save(book);
+        return mapToResponse(savedBook);
+    }
+
+    @Override
+    @Transactional
+    public BookResponse createBook(BookRequest request, MultipartFile imageFile) {
+        if (bookRepository.existsByIsbn(request.getIsbn().trim())) {
+            throw new BookAlreadyExistsException("Book already exists with ISBN: " + request.getIsbn().trim());
+        }
+
+        Book book = new Book();
+        applyRequest(book, request);
+
+        if (imageFile != null && !imageFile.isEmpty()) {
+            book.setImageUrl(storeImage(imageFile));
+        }
+
+        Book savedBook = bookRepository.save(book);
+        return mapToResponse(savedBook);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BookResponse> getAllBooks() {
+        return bookRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BookResponse getBookById(Long id) {
+        Book book = findBookById(id);
+        return mapToResponse(book);
+    }
+
+    @Override
+    @Transactional
+    public BookResponse updateBook(Long id, BookRequest request) {
+        Book book = findBookById(id);
+
+        String normalizedIsbn = request.getIsbn().trim();
+        if (bookRepository.existsByIsbnAndIdNot(normalizedIsbn, id)) {
+            throw new BookAlreadyExistsException("Book already exists with ISBN: " + normalizedIsbn);
+        }
+
+        applyRequest(book, request);
+        Book savedBook = bookRepository.save(book);
+        return mapToResponse(savedBook);
+    }
+
+    @Override
+    @Transactional
+    public void deleteBook(Long id) {
+        Book book = findBookById(id);
+        bookRepository.delete(book);
+    }
+
+    private Book findBookById(Long id) {
+        return bookRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + id));
+    }
+
+    private void applyRequest(Book book, BookRequest request) {
+        book.setTitle(request.getTitle().trim());
+        book.setIsbn(request.getIsbn().trim());
+        book.setPrice(request.getPrice());
+        book.setStockQuantity(request.getStockQuantity());
+        if (request.getDescription() == null) {
+            book.setDescription(null);
+        } else {
+            String normalizedDescription = request.getDescription().trim();
+            book.setDescription(normalizedDescription.isEmpty() ? null : normalizedDescription);
+        }
+
+        if (request.getImageUrl() != null) {
+            String normalizedImageUrl = request.getImageUrl().trim();
+            book.setImageUrl(normalizedImageUrl.isEmpty() ? null : normalizedImageUrl);
+        }
+    }
+
+    private String storeImage(MultipartFile imageFile) {
+        String originalFilename = StringUtils.cleanPath(imageFile.getOriginalFilename() == null ? "" : imageFile.getOriginalFilename());
+        String extension = "";
+        int dotIndex = originalFilename.lastIndexOf('.');
+        if (dotIndex >= 0) {
+            extension = originalFilename.substring(dotIndex);
+        }
+
+        String storedFileName = UUID.randomUUID() + extension;
+        Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
+
+        try {
+            Files.createDirectories(uploadPath);
+            Path targetFile = uploadPath.resolve(storedFileName);
+            imageFile.transferTo(targetFile);
+            return "/uploads/books/" + storedFileName;
+        } catch (IOException exception) {
+            throw new BadRequestException("Failed to upload image file");
+        }
+    }
+
+    private BookResponse mapToResponse(Book book) {
+        return BookResponse.builder()
+                .id(book.getId())
+                .title(book.getTitle())
+                .isbn(book.getIsbn())
+                .price(book.getPrice())
+                .stockQuantity(book.getStockQuantity())
+                .description(book.getDescription())
+                .imageUrl(book.getImageUrl())
+                .build();
+    }
+}

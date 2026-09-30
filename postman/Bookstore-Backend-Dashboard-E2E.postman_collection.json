@@ -1,0 +1,329 @@
+{
+  "info": {
+    "_postman_id": "e57faf30-f9e8-45e7-b52f-0e47b33f0678",
+    "name": "Bookstore Backend - Dashboard E2E Scenario",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "E2E flow: login, create books, add to cart, checkout, set DELIVERED, verify dashboard analytics for chart rendering."
+  },
+  "item": [
+    {
+      "name": "1) Login Admin",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "const res = pm.response.json();",
+              "pm.expect(res.success).to.eql(true);",
+              "pm.collectionVariables.set('adminToken', res.data.accessToken);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "2) Create Low-Stock Book",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+              "const res = pm.response.json();",
+              "pm.expect(res.success).to.eql(true);",
+              "pm.collectionVariables.set('bookLowId', String(res.data.id));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"E2E Low Stock {{$timestamp}}\",\n  \"isbn\": \"E2E-LOW-{{$timestamp}}\",\n  \"price\": 120000,\n  \"stockQuantity\": 5\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/books",
+          "host": ["{{baseUrl}}"],
+          "path": ["books"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "3) Create Normal Stock Book",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+              "const res = pm.response.json();",
+              "pm.expect(res.success).to.eql(true);",
+              "pm.collectionVariables.set('bookNormalId', String(res.data.id));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"E2E Normal Stock {{$timestamp}}\",\n  \"isbn\": \"E2E-NORMAL-{{$timestamp}}\",\n  \"price\": 200000,\n  \"stockQuantity\": 50\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/books",
+          "host": ["{{baseUrl}}"],
+          "path": ["books"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "4) Login Customer",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "const res = pm.response.json();",
+              "pm.expect(res.success).to.eql(true);",
+              "pm.collectionVariables.set('customerToken', res.data.accessToken);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{customerEmail}}\",\n  \"password\": \"{{customerPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "5) Add Low-Stock Book To Cart",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "const res = pm.response.json();",
+              "pm.expect(res.success).to.eql(true);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{customerToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"bookId\": {{bookLowId}},\n  \"quantity\": 2\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/cart/items",
+          "host": ["{{baseUrl}}"],
+          "path": ["cart", "items"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "6) Add Normal Book To Cart",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "const res = pm.response.json();",
+              "pm.expect(res.success).to.eql(true);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{customerToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"bookId\": {{bookNormalId}},\n  \"quantity\": 1\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/cart/items",
+          "host": ["{{baseUrl}}"],
+          "path": ["cart", "items"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "7) Checkout",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+              "const res = pm.response.json();",
+              "pm.expect(res.success).to.eql(true);",
+              "pm.collectionVariables.set('orderId', String(res.data.orderId));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{customerToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"recipientName\": \"{{recipientName}}\",\n  \"recipientPhone\": \"{{recipientPhone}}\",\n  \"shippingAddress\": \"{{shippingAddress}}\",\n  \"paymentMethod\": \"COD\",\n  \"couponCode\": null\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/orders/checkout",
+          "host": ["{{baseUrl}}"],
+          "path": ["orders", "checkout"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "8) Admin Update Order Status -> DELIVERED",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "const res = pm.response.json();",
+              "pm.expect(res.success).to.eql(true);",
+              "pm.expect(res.data.orderStatus).to.eql('DELIVERED');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"DELIVERED\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/orders/admin/{{orderId}}/status",
+          "host": ["{{baseUrl}}"],
+          "path": ["orders", "admin", "{{orderId}}", "status"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "9) Verify Dashboard Summary (for chart)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "const res = pm.response.json();",
+              "pm.expect(res.success).to.eql(true);",
+              "pm.expect(res.data.totalRevenue).to.not.eql(null);",
+              "pm.expect(Number(res.data.totalRevenue)).to.be.greaterThan(0);",
+              "pm.expect(Number(res.data.totalBooks)).to.be.greaterThan(0);",
+              "pm.expect(Number(res.data.totalStockQuantity)).to.be.greaterThan(0);",
+              "pm.expect(Array.isArray(res.data.lowStockBooks)).to.eql(true);",
+              "const lowBookId = Number(pm.collectionVariables.get('bookLowId'));",
+              "const exists = res.data.lowStockBooks.some(b => Number(b.bookId) === lowBookId);",
+              "pm.test('Low-stock seeded book appears in alert list', function () { pm.expect(exists).to.eql(true); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/summary",
+          "host": ["{{baseUrl}}"],
+          "path": ["dashboard", "summary"]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080/api/v1" },
+    { "key": "adminEmail", "value": "admin@bookstore.com" },
+    { "key": "adminPassword", "value": "123456" },
+    { "key": "customerEmail", "value": "customer@example.com" },
+    { "key": "customerPassword", "value": "Password@123" },
+    { "key": "recipientName", "value": "Nguyen Van A" },
+    { "key": "recipientPhone", "value": "0901234567" },
+    { "key": "shippingAddress", "value": "123 Le Loi, Q1, HCM" },
+    { "key": "adminToken", "value": "" },
+    { "key": "customerToken", "value": "" },
+    { "key": "bookLowId", "value": "" },
+    { "key": "bookNormalId", "value": "" },
+    { "key": "orderId", "value": "" }
+  ]
+}

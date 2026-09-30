@@ -1,0 +1,50 @@
+{
+  "info": {
+    "_postman_id": "a6bca5df-7d5b-4a96-9794-f90b3af8cc6b",
+    "name": "Bookstore Backend API - Dashboard Addon",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Addon collection to import into the existing Bookstore collection. Contains Dashboard Analytics APIs."
+  },
+  "item": [
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Get Dashboard Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboard",
+                "summary"
+              ]
+            },
+            "description": "Returns total revenue, total stock quantity, total unique books, and low stock alerts."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api/v1"
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    }
+  ]
+}
