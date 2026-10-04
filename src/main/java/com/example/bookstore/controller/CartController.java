@@ -52,4 +52,11 @@ public class CartController {
         RemoveCartItemResponse response = cartService.removeCartItem(principal.getId(), itemId);
         return ResponseEntity.ok(ApiResponse.success("Cart item removed successfully", response));
     }
+
+    @DeleteMapping("/items")
+    public ResponseEntity<ApiResponse<CartResponse>> clearCart(Authentication authentication) {
+        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+        CartResponse response = cartService.clearCart(principal.getId());
+        return ResponseEntity.ok(ApiResponse.success("Cart cleared successfully", response));
+    }
 }

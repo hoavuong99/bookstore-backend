@@ -65,9 +65,11 @@ public class CartServiceImpl implements CartService {
         CartItem savedItem = cartItemRepository.save(cartItem);
 
         return CartItemResponse.builder()
+                .itemId(savedItem.getId())
                 .cartId(cart.getId())
                 .bookId(book.getId())
                 .bookTitle(book.getTitle())
+                .imageUrl(book.getImageUrl())
                 .unitPrice(book.getPrice())
                 .quantity(savedItem.getQuantity())
                 .lineTotal(book.getPrice().multiply(BigDecimal.valueOf(savedItem.getQuantity())))
@@ -77,14 +79,22 @@ public class CartServiceImpl implements CartService {
             @Override
             @Transactional(readOnly = true)
             public CartResponse getCart(Long userId) {
-            Cart cart = cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cart not found for user id: " + userId));
+            Cart cart = cartRepository.findByUserId(userId).orElse(null);
+            if (cart == null) {
+                return CartResponse.builder()
+                    .totalItems(0)
+                    .subtotal(BigDecimal.ZERO)
+                    .items(List.of())
+                    .build();
+            }
 
             List<CartItemResponse> items = cartItemRepository.findItemsByCartId(cart.getId()).stream()
                 .map(cartItem -> CartItemResponse.builder()
+                    .itemId(cartItem.getId())
                     .cartId(cart.getId())
                     .bookId(cartItem.getBook().getId())
                     .bookTitle(cartItem.getBook().getTitle())
+                    .imageUrl(cartItem.getBook().getImageUrl())
                     .unitPrice(cartItem.getBook().getPrice())
                     .quantity(cartItem.getQuantity())
                     .lineTotal(cartItem.getBook().getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())))
@@ -126,4 +136,20 @@ public class CartServiceImpl implements CartService {
                 .remainingItems(remainingItems)
                 .build();
             }
+
+    @Override
+    @Transactional
+    public CartResponse clearCart(Long userId) {
+        Cart cart = cartRepository.findByUserId(userId).orElse(null);
+        if (cart != null) {
+            cartItemRepository.deleteAllByCartId(cart.getId());
+        }
+
+        return CartResponse.builder()
+                .cartId(cart == null ? null : cart.getId())
+                .totalItems(0)
+                .subtotal(BigDecimal.ZERO)
+                .items(List.of())
+                .build();
+    }
 }

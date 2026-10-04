@@ -12,13 +12,13 @@ public class CheckoutRequest {
 
     private String couponCode;
 
-    @NotBlank
+    @NotBlank(message = "Shipping address is required")
     private String shippingAddress;
 
-    @NotBlank
+    @NotBlank(message = "Receiver name is required")
     private String recipientName;
 
-    @NotBlank
+    @NotBlank(message = "Receiver phone is required")
     private String recipientPhone;
 
     @NotNull
