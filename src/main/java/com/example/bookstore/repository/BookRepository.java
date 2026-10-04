@@ -13,6 +13,8 @@ public interface BookRepository extends JpaRepository<Book, Long> {
 
 	boolean existsByIsbnAndIdNot(String isbn, Long id);
 
+	boolean existsByCategories_Id(Long categoryId);
+
     @Query("""
 	    select coalesce(sum(b.stockQuantity), 0)
 	    from Book b

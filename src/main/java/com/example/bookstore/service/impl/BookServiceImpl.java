@@ -7,7 +7,9 @@ import com.example.bookstore.exception.BookAlreadyExistsException;
 import com.example.bookstore.exception.BadRequestException;
 import com.example.bookstore.exception.ResourceNotFoundException;
 import com.example.bookstore.entity.Book;
+import com.example.bookstore.entity.Category;
 import com.example.bookstore.repository.BookRepository;
+import com.example.bookstore.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,7 +22,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -28,6 +36,7 @@ import java.util.UUID;
 public class BookServiceImpl implements BookService {
 
     private final BookRepository bookRepository;
+    private final CategoryRepository categoryRepository;
 
     @Value("${app.upload-dir:uploads/books}")
     private String uploadDir;
@@ -106,10 +115,28 @@ public class BookServiceImpl implements BookService {
     }
 
     private void applyRequest(Book book, BookRequest request) {
+        Set<Long> requestedCategoryIds = request.getCategoryIds().stream()
+            .filter(Objects::nonNull)
+            .collect(LinkedHashSet::new, LinkedHashSet::add, LinkedHashSet::addAll);
+
+        List<Category> categories = categoryRepository.findAllById(requestedCategoryIds);
+        if (categories.size() != requestedCategoryIds.size()) {
+            Set<Long> foundCategoryIds = categories.stream()
+                .map(Category::getId)
+                .collect(LinkedHashSet::new, LinkedHashSet::add, LinkedHashSet::addAll);
+
+            List<Long> missingCategoryIds = requestedCategoryIds.stream()
+                .filter(id -> !foundCategoryIds.contains(id))
+                .toList();
+
+            throw new ResourceNotFoundException("Category not found with id(s): " + missingCategoryIds);
+        }
+
         book.setTitle(request.getTitle().trim());
         book.setIsbn(request.getIsbn().trim());
         book.setPrice(request.getPrice());
         book.setStockQuantity(request.getStockQuantity());
+        book.setCategories(new HashSet<>(categories));
         if (request.getDescription() == null) {
             book.setDescription(null);
         } else {
@@ -145,12 +172,25 @@ public class BookServiceImpl implements BookService {
     }
 
     private BookResponse mapToResponse(Book book) {
+        List<Category> sortedCategories = new ArrayList<>(book.getCategories());
+        sortedCategories.sort(Comparator.comparing(Category::getId));
+
+        List<Long> categoryIds = sortedCategories.stream()
+            .map(Category::getId)
+            .toList();
+
+        List<String> categoryNames = sortedCategories.stream()
+            .map(Category::getName)
+            .toList();
+
         return BookResponse.builder()
                 .id(book.getId())
                 .title(book.getTitle())
                 .isbn(book.getIsbn())
                 .price(book.getPrice())
                 .stockQuantity(book.getStockQuantity())
+            .categoryIds(categoryIds)
+            .categoryNames(categoryNames)
                 .description(book.getDescription())
                 .imageUrl(book.getImageUrl())
                 .build();

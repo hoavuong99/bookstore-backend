@@ -18,8 +18,11 @@ import java.util.Set;
 @Table(name = "categories")
 public class Category extends BaseEntity {
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String name;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
     @ManyToMany(mappedBy = "categories")
     private Set<Book> books =  new HashSet<>();

@@ -139,7 +139,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"{{bookTitle}}\",\n  \"isbn\": \"{{bookIsbn}}\",\n  \"price\": {{bookPrice}},\n  \"stockQuantity\": {{bookStock}}\n}"
+              "raw": "{\n  \"title\": \"{{bookTitle}}\",\n  \"isbn\": \"{{bookIsbn}}\",\n  \"price\": {{bookPrice}},\n  \"stockQuantity\": {{bookStock}},\n  \"categoryIds\": {{bookCategoryIds}}\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/books",
@@ -214,7 +214,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"{{bookTitleUpdated}}\",\n  \"isbn\": \"{{bookIsbn}}\",\n  \"price\": {{bookPriceUpdated}},\n  \"stockQuantity\": {{bookStockUpdated}}\n}"
+              "raw": "{\n  \"title\": \"{{bookTitleUpdated}}\",\n  \"isbn\": \"{{bookIsbn}}\",\n  \"price\": {{bookPriceUpdated}},\n  \"stockQuantity\": {{bookStockUpdated}},\n  \"categoryIds\": {{bookCategoryIds}}\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/books/{{bookId}}",
@@ -247,6 +247,142 @@
               "path": [
                 "books",
                 "{{bookId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "Create Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res?.data?.id) {",
+                  "  pm.collectionVariables.set('categoryId', String(res.data.id));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{categoryName}}\",\n  \"description\": \"{{categoryDescription}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Categories",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Category By Id",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/categories/{{categoryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories",
+                "{{categoryId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{categoryNameUpdated}}\",\n  \"description\": \"{{categoryDescriptionUpdated}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/categories/{{categoryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories",
+                "{{categoryId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Category",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/categories/{{categoryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories",
+                "{{categoryId}}"
               ]
             }
           },
@@ -548,6 +684,30 @@
     {
       "key": "bookId",
       "value": "1"
+    },
+    {
+      "key": "categoryId",
+      "value": "1"
+    },
+    {
+      "key": "bookCategoryIds",
+      "value": "[1]"
+    },
+    {
+      "key": "categoryName",
+      "value": "Programming"
+    },
+    {
+      "key": "categoryDescription",
+      "value": "Books about software development and architecture"
+    },
+    {
+      "key": "categoryNameUpdated",
+      "value": "Programming Updated"
+    },
+    {
+      "key": "categoryDescriptionUpdated",
+      "value": "Updated category description"
     },
     {
       "key": "bookTitle",

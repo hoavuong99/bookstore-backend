@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Getter
 @Builder
@@ -13,6 +14,8 @@ public class BookResponse {
     private String isbn;
     private BigDecimal price;
     private Integer stockQuantity;
+    private List<Long> categoryIds;
+    private List<String> categoryNames;
     private String description;
     private String imageUrl;
 }
