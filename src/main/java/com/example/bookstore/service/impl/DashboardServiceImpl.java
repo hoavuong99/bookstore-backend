@@ -1,14 +1,17 @@
 package com.example.bookstore.service.impl;
 
 import com.example.bookstore.dto.dashboard.DashboardSummaryResponse;
+import com.example.bookstore.dto.dashboard.BestSellerResponse;
 import com.example.bookstore.dto.dashboard.LowStockBookResponse;
 import com.example.bookstore.repository.BookRepository;
 import com.example.bookstore.repository.OrderRepository;
+import com.example.bookstore.repository.OrderItemRepository;
 import com.example.bookstore.service.DashboardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -19,6 +22,7 @@ public class DashboardServiceImpl implements DashboardService {
 
     private final BookRepository bookRepository;
     private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
 
     @Value("${app.dashboard.low-stock-threshold:10}")
     private int lowStockThreshold;
@@ -30,12 +34,15 @@ public class DashboardServiceImpl implements DashboardService {
         Long totalStockQuantity = bookRepository.sumTotalStockQuantity();
         Long totalBooks = bookRepository.countTotalBooks();
         List<LowStockBookResponse> lowStockBooks = bookRepository.findLowStockBooks(lowStockThreshold);
+        List<BestSellerResponse> bestSellers =
+                orderItemRepository.findBestSellers(PageRequest.of(0, 3));
 
         return DashboardSummaryResponse.builder()
                 .totalRevenue(totalRevenue != null ? totalRevenue : BigDecimal.ZERO)
                 .totalStockQuantity(totalStockQuantity != null ? totalStockQuantity : 0L)
                 .totalBooks(totalBooks != null ? totalBooks : 0L)
                 .lowStockBooks(lowStockBooks)
+                .bestSellers(bestSellers)
                 .build();
     }
 }

@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.security.access.prepost.PreAuthorize;
 
@@ -36,7 +39,14 @@ public class CategoryController {
 	}
 
 	@GetMapping
-	public ResponseEntity<ApiResponse<List<CategoryResponse>>> getAllCategories() {
+	public ResponseEntity<?> getAllCategories(
+			@RequestParam(required = false) Integer page,
+			@RequestParam(defaultValue = "10") int size
+	) {
+		if (page != null) {
+			Page<CategoryResponse> response = categoryService.getAllCategories(PageRequest.of(page, size));
+			return ResponseEntity.ok(ApiResponse.success("Categories retrieved successfully", response));
+		}
 		List<CategoryResponse> response = categoryService.getAllCategories();
 		return ResponseEntity.ok(ApiResponse.success("Categories retrieved successfully", response));
 	}

@@ -13,4 +13,5 @@ public class DashboardSummaryResponse {
     private Long totalStockQuantity;
     private Long totalBooks;
     private List<LowStockBookResponse> lowStockBooks;
+    private List<BestSellerResponse> bestSellers;
 }

@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -51,9 +54,25 @@ public class BookController {
         }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<BookResponse>>> getAllBooks() {
+    public ResponseEntity<?> getAllBooks(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search
+    ) {
+        if (page != null) {
+            Page<BookResponse> response = bookService.getAllBooks(search, PageRequest.of(page, size));
+            return ResponseEntity.ok(ApiResponse.success("Books retrieved successfully", response));
+        }
         List<BookResponse> response = bookService.getAllBooks();
         return ResponseEntity.ok(ApiResponse.success("Books retrieved successfully", response));
+    }
+
+    @GetMapping("/best-sellers")
+    public ResponseEntity<ApiResponse<List<BookResponse>>> getBestSellingBooks(
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        List<BookResponse> response = bookService.getBestSellingBooks(PageRequest.of(0, size));
+        return ResponseEntity.ok(ApiResponse.success("Best-selling books retrieved successfully", response));
     }
 
     @GetMapping("/{id}")

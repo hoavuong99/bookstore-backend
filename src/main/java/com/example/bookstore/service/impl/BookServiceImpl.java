@@ -10,6 +10,8 @@ import com.example.bookstore.entity.Book;
 import com.example.bookstore.entity.Category;
 import com.example.bookstore.repository.BookRepository;
 import com.example.bookstore.repository.CategoryRepository;
+import com.example.bookstore.repository.OrderItemRepository;
+import com.example.bookstore.dto.dashboard.BestSellerResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -27,6 +31,8 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -37,6 +43,7 @@ public class BookServiceImpl implements BookService {
 
     private final BookRepository bookRepository;
     private final CategoryRepository categoryRepository;
+    private final OrderItemRepository orderItemRepository;
 
     @Value("${app.upload-dir:uploads/books}")
     private String uploadDir;
@@ -76,6 +83,37 @@ public class BookServiceImpl implements BookService {
     @Transactional(readOnly = true)
     public List<BookResponse> getAllBooks() {
         return bookRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<BookResponse> getAllBooks(Pageable pageable) {
+        return bookRepository.findAll(pageable).map(this::mapToResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<BookResponse> getAllBooks(String search, Pageable pageable) {
+        if (search == null || search.isBlank()) {
+            return getAllBooks(pageable);
+        }
+        return bookRepository.findByTitleContainingIgnoreCase(search.trim(), pageable)
+                .map(this::mapToResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BookResponse> getBestSellingBooks(Pageable pageable) {
+        List<BestSellerResponse> bestSellers = orderItemRepository.findBestSellers(pageable);
+        Map<Long, Book> booksById = new HashMap<>();
+        bookRepository.findAllById(bestSellers.stream().map(BestSellerResponse::getBookId).toList())
+                .forEach(book -> booksById.put(book.getId(), book));
+
+        return bestSellers.stream()
+                .map(bestSeller -> booksById.get(bestSeller.getBookId()))
+                .filter(book -> book != null)
                 .map(this::mapToResponse)
                 .toList();
     }
