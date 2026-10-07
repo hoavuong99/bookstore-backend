@@ -14,4 +14,7 @@ public class CategoryRequest {
 
     @Size(max = 5000)
     private String description;
+
+    @Size(max = 2048)
+    private String imageUrl;
 }

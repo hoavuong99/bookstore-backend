@@ -19,6 +19,7 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -64,6 +65,33 @@ public class Order extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_status", nullable = false)
     private PaymentStatus paymentStatus;
+
+    @Column(name = "payment_provider")
+    private String paymentProvider;
+
+    @Column(name = "payment_transaction_id")
+    private String paymentTransactionId;
+
+    @Column(name = "payment_gateway_transaction_id")
+    private String paymentGatewayTransactionId;
+
+    @Column(name = "payment_url", length = 1000)
+    private String paymentUrl;
+
+    @Column(name = "payment_session_state")
+    private String paymentSessionState;
+
+    @Column(name = "payment_error", length = 1000)
+    private String paymentError;
+
+    @Column(name = "payment_started_at")
+    private LocalDateTime paymentStartedAt;
+
+    @Column(name = "payment_expires_at")
+    private LocalDateTime paymentExpiresAt;
+
+    @Column(name = "paid_at")
+    private LocalDateTime paidAt;
 
     @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
     private List<OrderItem> orderItems = new ArrayList<>();

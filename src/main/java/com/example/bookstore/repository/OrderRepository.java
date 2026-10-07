@@ -7,9 +7,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
 	Page<Order> findByUserId(Long userId, Pageable pageable);
+
+	Optional<Order> findByPaymentTransactionId(String paymentTransactionId);
 
 	@Query("""
 			select coalesce(sum(o.totalAmount), 0)

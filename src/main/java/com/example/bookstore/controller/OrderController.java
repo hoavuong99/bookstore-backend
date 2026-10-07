@@ -5,7 +5,9 @@ import com.example.bookstore.dto.order.CheckoutRequest;
 import com.example.bookstore.dto.order.CheckoutResponse;
 import com.example.bookstore.dto.order.OrderDetailResponse;
 import com.example.bookstore.dto.order.OrderSummaryResponse;
+import com.example.bookstore.dto.order.PaymentResponse;
 import com.example.bookstore.dto.order.UpdateOrderStatusRequest;
+import com.example.bookstore.service.ZaloPayService;
 import com.example.bookstore.service.OrderService;
 import com.example.bookstore.security.CustomUserPrincipal;
 import jakarta.validation.Valid;
@@ -30,6 +32,27 @@ import org.springframework.web.bind.annotation.RestController;
 public class OrderController {
 
     private final OrderService orderService;
+    private final ZaloPayService zaloPayService;
+
+    @PostMapping("/{orderId}/payment/zalopay")
+    public ResponseEntity<ApiResponse<PaymentResponse>> createZaloPayPayment(
+            @PathVariable Long orderId,
+            Authentication authentication
+    ) {
+        CustomUserPrincipal principal = getPrincipal(authentication);
+        PaymentResponse response = zaloPayService.createSession(principal.getId(), orderId);
+        return ResponseEntity.ok(ApiResponse.success("ZaloPay payment session created", response));
+    }
+
+    @GetMapping("/{orderId}/payment/zalopay")
+    public ResponseEntity<ApiResponse<PaymentResponse>> refreshZaloPayPayment(
+            @PathVariable Long orderId,
+            Authentication authentication
+    ) {
+        CustomUserPrincipal principal = getPrincipal(authentication);
+        PaymentResponse response = zaloPayService.refresh(principal.getId(), orderId);
+        return ResponseEntity.ok(ApiResponse.success("ZaloPay payment status retrieved", response));
+    }
 
     @PostMapping("/checkout")
     public ResponseEntity<ApiResponse<CheckoutResponse>> checkout(
@@ -65,6 +88,16 @@ public class OrderController {
                 isAdminOrStaff(principal)
         );
         return ResponseEntity.ok(ApiResponse.success("Order retrieved successfully", response));
+    }
+
+    @PostMapping("/{orderId}/cancel")
+    public ResponseEntity<ApiResponse<OrderDetailResponse>> cancelOrder(
+            @PathVariable Long orderId,
+            Authentication authentication
+    ) {
+        CustomUserPrincipal principal = getPrincipal(authentication);
+        OrderDetailResponse response = orderService.cancelOrder(principal.getId(), orderId);
+        return ResponseEntity.ok(ApiResponse.success("Order cancelled successfully", response));
     }
 
     @GetMapping("/admin/all")

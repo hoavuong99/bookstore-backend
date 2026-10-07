@@ -30,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -132,7 +133,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(readOnly = true)
     public Page<OrderSummaryResponse> getMyOrders(Long userId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return orderRepository.findByUserId(userId, pageable)
                 .map(this::mapToSummaryResponse);
     }
@@ -153,7 +154,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(readOnly = true)
     public Page<OrderSummaryResponse> getAllOrders(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return orderRepository.findAll(pageable)
                 .map(this::mapToSummaryResponse);
     }
@@ -167,6 +168,33 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderStatus(status);
         Order savedOrder = orderRepository.save(order);
         return mapToDetailResponse(savedOrder);
+    }
+
+    @Override
+    @Transactional
+    public OrderDetailResponse cancelOrder(Long userId, Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        if (!order.getUser().getId().equals(userId)) {
+            throw new ResourceNotFoundException("Order not found with id: " + orderId);
+        }
+        if (order.getOrderStatus() != OrderStatus.PENDING) {
+            throw new IllegalStateException("Only pending orders can be cancelled.");
+        }
+
+        for (OrderItem orderItem : orderItemRepository.findByOrderId(order.getId())) {
+            Book book = orderItem.getBook();
+            book.setStockQuantity(book.getStockQuantity() + orderItem.getQuantity());
+            bookRepository.save(book);
+        }
+        order.setOrderStatus(OrderStatus.CANCELLED);
+        if (order.getPaymentStatus() != PaymentStatus.PAID) {
+            order.setPaymentStatus(PaymentStatus.FAILED);
+        }
+        order.setPaymentUrl(null);
+        order.setPaymentError("Order cancelled by customer.");
+        return mapToDetailResponse(orderRepository.save(order));
     }
 
     private BigDecimal calculateSubtotal(List<CartItem> cartItems) {
@@ -244,19 +272,23 @@ public class OrderServiceImpl implements OrderService {
             .paymentMethod(order.getPaymentMethod())
             .paymentStatus(order.getPaymentStatus())
             .createdAt(order.getCreatedAt())
+            .items(mapOrderItems(order))
             .build();
         }
 
-        private OrderDetailResponse mapToDetailResponse(Order order) {
-        List<OrderItemResponse> items = orderItemRepository.findByOrderId(order.getId()).stream()
+        private List<OrderItemResponse> mapOrderItems(Order order) {
+        return orderItemRepository.findByOrderId(order.getId()).stream()
             .map(orderItem -> OrderItemResponse.builder()
                 .bookId(orderItem.getBook().getId())
                 .bookTitle(orderItem.getBook().getTitle())
+                .imageUrl(orderItem.getBook().getImageUrl())
                 .quantity(orderItem.getQuantity())
                 .price(orderItem.getPrice())
                 .build())
             .toList();
+        }
 
+        private OrderDetailResponse mapToDetailResponse(Order order) {
         return OrderDetailResponse.builder()
             .orderId(order.getId())
             .userId(order.getUser().getId())
@@ -270,7 +302,7 @@ public class OrderServiceImpl implements OrderService {
             .paymentMethod(order.getPaymentMethod())
             .paymentStatus(order.getPaymentStatus())
             .createdAt(order.getCreatedAt())
-            .items(items)
+            .items(mapOrderItems(order))
             .build();
         }
 }

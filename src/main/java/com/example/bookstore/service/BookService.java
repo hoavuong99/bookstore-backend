@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.math.BigDecimal;
 
 public interface BookService {
     BookResponse createBook(BookRequest request);
@@ -15,12 +16,15 @@ public interface BookService {
 
     List<BookResponse> getAllBooks();
     Page<BookResponse> getAllBooks(Pageable pageable);
-    Page<BookResponse> getAllBooks(String search, Pageable pageable);
+    Page<BookResponse> getAllBooks(String search, Long categoryId, BigDecimal maxPrice, Pageable pageable);
     List<BookResponse> getBestSellingBooks(Pageable pageable);
+    List<BookResponse> getLatestBooks(Pageable pageable);
+    List<BookResponse> getEditorsPicks(Pageable pageable);
 
     BookResponse getBookById(Long id);
 
     BookResponse updateBook(Long id, BookRequest request);
+    BookResponse updateBook(Long id, BookRequest request, MultipartFile imageFile);
 
     void deleteBook(Long id);
 }

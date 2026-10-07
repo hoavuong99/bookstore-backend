@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -26,6 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping("/api/v1/books")
@@ -57,10 +59,17 @@ public class BookController {
     public ResponseEntity<?> getAllBooks(
             @RequestParam(required = false) Integer page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String search
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) BigDecimal maxPrice
     ) {
         if (page != null) {
-            Page<BookResponse> response = bookService.getAllBooks(search, PageRequest.of(page, size));
+            Page<BookResponse> response = bookService.getAllBooks(
+                    search,
+                    categoryId,
+                    maxPrice,
+                    PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
+            );
             return ResponseEntity.ok(ApiResponse.success("Books retrieved successfully", response));
         }
         List<BookResponse> response = bookService.getAllBooks();
@@ -73,6 +82,22 @@ public class BookController {
     ) {
         List<BookResponse> response = bookService.getBestSellingBooks(PageRequest.of(0, size));
         return ResponseEntity.ok(ApiResponse.success("Best-selling books retrieved successfully", response));
+    }
+
+    @GetMapping("/new-arrivals")
+    public ResponseEntity<ApiResponse<List<BookResponse>>> getLatestBooks(
+            @RequestParam(defaultValue = "5") int size
+    ) {
+        List<BookResponse> response = bookService.getLatestBooks(PageRequest.of(0, size));
+        return ResponseEntity.ok(ApiResponse.success("Latest books retrieved successfully", response));
+    }
+
+    @GetMapping("/editors-picks")
+    public ResponseEntity<ApiResponse<List<BookResponse>>> getEditorsPicks(
+            @RequestParam(defaultValue = "4") int size
+    ) {
+        List<BookResponse> response = bookService.getEditorsPicks(PageRequest.of(0, size));
+        return ResponseEntity.ok(ApiResponse.success("Editor's picks retrieved successfully", response));
     }
 
     @GetMapping("/{id}")
@@ -88,6 +113,17 @@ public class BookController {
             @Valid @RequestBody BookRequest request
     ) {
         BookResponse response = bookService.updateBook(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Book updated successfully", response));
+    }
+
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<BookResponse>> updateBookWithImage(
+            @PathVariable Long id,
+            @Valid @ModelAttribute BookRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile image
+    ) {
+        BookResponse response = bookService.updateBook(id, request, image);
         return ResponseEntity.ok(ApiResponse.success("Book updated successfully", response));
     }
 

@@ -55,7 +55,7 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/books", "/api/v1/books/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/categories", "/api/v1/categories/**").permitAll()
-                    .requestMatchers("/api/v1/auth/**", "/actuator/health", "/error", "/uploads/**").permitAll()
+                    .requestMatchers("/api/v1/auth/**", "/api/v1/payments/zalopay/callback", "/actuator/health", "/error", "/uploads/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

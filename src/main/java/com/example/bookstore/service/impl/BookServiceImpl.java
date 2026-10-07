@@ -20,13 +20,16 @@ import org.springframework.util.StringUtils;
 
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -82,7 +85,7 @@ public class BookServiceImpl implements BookService {
     @Override
     @Transactional(readOnly = true)
     public List<BookResponse> getAllBooks() {
-        return bookRepository.findAll().stream()
+        return bookRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt")).stream()
                 .map(this::mapToResponse)
                 .toList();
     }
@@ -90,16 +93,30 @@ public class BookServiceImpl implements BookService {
     @Override
     @Transactional(readOnly = true)
     public Page<BookResponse> getAllBooks(Pageable pageable) {
-        return bookRepository.findAll(pageable).map(this::mapToResponse);
+        Pageable newestFirst = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+        return bookRepository.findAll(newestFirst)
+                .map(this::mapToResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<BookResponse> getAllBooks(String search, Pageable pageable) {
-        if (search == null || search.isBlank()) {
-            return getAllBooks(pageable);
-        }
-        return bookRepository.findByTitleContainingIgnoreCase(search.trim(), pageable)
+    public Page<BookResponse> getAllBooks(String search, Long categoryId, BigDecimal maxPrice, Pageable pageable) {
+        String normalizedSearch = search == null ? null : search.trim();
+        Pageable newestFirst = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+        return bookRepository.searchBooks(
+                        normalizedSearch,
+                        categoryId,
+                        maxPrice,
+                        newestFirst
+                )
                 .map(this::mapToResponse);
     }
 
@@ -113,7 +130,23 @@ public class BookServiceImpl implements BookService {
 
         return bestSellers.stream()
                 .map(bestSeller -> booksById.get(bestSeller.getBookId()))
-                .filter(book -> book != null)
+                .filter(Objects::nonNull)
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BookResponse> getLatestBooks(Pageable pageable) {
+        return bookRepository.findAllByOrderByCreatedAtDesc(pageable).stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BookResponse> getEditorsPicks(Pageable pageable) {
+        return bookRepository.findByEditorsPickTrueOrderByCreatedAtDesc(pageable).stream()
                 .map(this::mapToResponse)
                 .toList();
     }
@@ -128,6 +161,12 @@ public class BookServiceImpl implements BookService {
     @Override
     @Transactional
     public BookResponse updateBook(Long id, BookRequest request) {
+        return updateBook(id, request, null);
+    }
+
+    @Override
+    @Transactional
+    public BookResponse updateBook(Long id, BookRequest request, MultipartFile imageFile) {
         Book book = findBookById(id);
 
         String normalizedIsbn = request.getIsbn().trim();
@@ -136,6 +175,9 @@ public class BookServiceImpl implements BookService {
         }
 
         applyRequest(book, request);
+        if (imageFile != null && !imageFile.isEmpty()) {
+            book.setImageUrl(storeImage(imageFile));
+        }
         Book savedBook = bookRepository.save(book);
         return mapToResponse(savedBook);
     }
@@ -171,6 +213,11 @@ public class BookServiceImpl implements BookService {
         }
 
         book.setTitle(request.getTitle().trim());
+        if (request.getAuthorName() == null || request.getAuthorName().isBlank()) {
+            book.setAuthorName(null);
+        } else {
+            book.setAuthorName(request.getAuthorName().trim());
+        }
         book.setIsbn(request.getIsbn().trim());
         book.setPrice(request.getPrice());
         book.setStockQuantity(request.getStockQuantity());
@@ -186,9 +233,13 @@ public class BookServiceImpl implements BookService {
             String normalizedImageUrl = request.getImageUrl().trim();
             book.setImageUrl(normalizedImageUrl.isEmpty() ? null : normalizedImageUrl);
         }
+
+        book.setRating(request.getRating());
+        book.setEditorsPick(Boolean.TRUE.equals(request.getEditorsPick()));
     }
 
     private String storeImage(MultipartFile imageFile) {
+        validateImage(imageFile);
         String originalFilename = StringUtils.cleanPath(imageFile.getOriginalFilename() == null ? "" : imageFile.getOriginalFilename());
         String extension = "";
         int dotIndex = originalFilename.lastIndexOf('.');
@@ -209,6 +260,16 @@ public class BookServiceImpl implements BookService {
         }
     }
 
+    private void validateImage(MultipartFile imageFile) {
+        if (imageFile.getSize() > 5 * 1024 * 1024) {
+            throw new BadRequestException("Image file must be 5 MB or smaller");
+        }
+        String contentType = imageFile.getContentType();
+        if (contentType == null || !List.of("image/jpeg", "image/png", "image/webp", "image/gif").contains(contentType)) {
+            throw new BadRequestException("Only JPEG, PNG, WEBP, and GIF images are supported");
+        }
+    }
+
     private BookResponse mapToResponse(Book book) {
         List<Category> sortedCategories = new ArrayList<>(book.getCategories());
         sortedCategories.sort(Comparator.comparing(Category::getId));
@@ -224,6 +285,7 @@ public class BookServiceImpl implements BookService {
         return BookResponse.builder()
                 .id(book.getId())
                 .title(book.getTitle())
+                .authorName(book.getAuthorName())
                 .isbn(book.getIsbn())
                 .price(book.getPrice())
                 .stockQuantity(book.getStockQuantity())
@@ -231,6 +293,8 @@ public class BookServiceImpl implements BookService {
             .categoryNames(categoryNames)
                 .description(book.getDescription())
                 .imageUrl(book.getImageUrl())
+                .rating(book.getRating())
+                .editorsPick(book.getEditorsPick())
                 .build();
     }
 }

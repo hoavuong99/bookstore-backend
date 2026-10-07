@@ -19,6 +19,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
@@ -34,6 +38,17 @@ public class CategoryController {
 	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<ApiResponse<CategoryResponse>> createCategory(@Valid @RequestBody CategoryRequest request) {
 		CategoryResponse response = categoryService.createCategory(request);
+		return ResponseEntity.status(HttpStatus.CREATED)
+				.body(ApiResponse.success("Category created successfully", response));
+	}
+
+	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<ApiResponse<CategoryResponse>> createCategoryWithImage(
+			@Valid @ModelAttribute CategoryRequest request,
+			@RequestPart(value = "image", required = false) MultipartFile image
+	) {
+		CategoryResponse response = categoryService.createCategory(request, image);
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(ApiResponse.success("Category created successfully", response));
 	}
@@ -64,6 +79,17 @@ public class CategoryController {
 			@Valid @RequestBody CategoryRequest request
 	) {
 		CategoryResponse response = categoryService.updateCategory(id, request);
+		return ResponseEntity.ok(ApiResponse.success("Category updated successfully", response));
+	}
+
+	@PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<ApiResponse<CategoryResponse>> updateCategoryWithImage(
+			@PathVariable Long id,
+			@Valid @ModelAttribute CategoryRequest request,
+			@RequestPart(value = "image", required = false) MultipartFile image
+	) {
+		CategoryResponse response = categoryService.updateCategory(id, request, image);
 		return ResponseEntity.ok(ApiResponse.success("Category updated successfully", response));
 	}
 

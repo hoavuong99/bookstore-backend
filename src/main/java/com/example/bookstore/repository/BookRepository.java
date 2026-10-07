@@ -9,9 +9,26 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.math.BigDecimal;
 
 public interface BookRepository extends JpaRepository<Book, Long> {
     Page<Book> findByTitleContainingIgnoreCase(String title, Pageable pageable);
+
+    @Query("""
+        select b
+        from Book b
+        where (:search is null or :search = '' or lower(b.title) like lower(concat('%', :search, '%')))
+          and (:categoryId is null or exists (select category.id from Category category join category.books categorizedBook where categorizedBook.id = b.id and category.id = :categoryId))
+          and (:maxPrice is null or b.price <= :maxPrice)
+        """)
+    Page<Book> searchBooks(
+            @Param("search") String search,
+            @Param("categoryId") Long categoryId,
+            @Param("maxPrice") BigDecimal maxPrice,
+            Pageable pageable
+    );
+    List<Book> findAllByOrderByCreatedAtDesc(Pageable pageable);
+    List<Book> findByEditorsPickTrueOrderByCreatedAtDesc(Pageable pageable);
 
 	boolean existsByIsbn(String isbn);
 

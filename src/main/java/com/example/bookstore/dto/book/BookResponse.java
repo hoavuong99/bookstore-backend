@@ -11,6 +11,7 @@ import java.util.List;
 public class BookResponse {
     private Long id;
     private String title;
+    private String authorName;
     private String isbn;
     private BigDecimal price;
     private Integer stockQuantity;
@@ -18,4 +19,6 @@ public class BookResponse {
     private List<String> categoryNames;
     private String description;
     private String imageUrl;
+    private BigDecimal rating;
+    private Boolean editorsPick;
 }

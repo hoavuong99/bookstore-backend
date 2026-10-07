@@ -12,8 +12,16 @@ import com.example.bookstore.service.CategoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -24,9 +32,18 @@ public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
     private final BookRepository bookRepository;
 
+    @Value("${app.upload-dir:uploads/books}")
+    private String uploadDir;
+
     @Override
     @Transactional
     public CategoryResponse createCategory(CategoryRequest request) {
+        return createCategory(request, null);
+    }
+
+    @Override
+    @Transactional
+    public CategoryResponse createCategory(CategoryRequest request, MultipartFile imageFile) {
         String normalizedName = request.getName().trim();
         if (categoryRepository.existsByNameIgnoreCase(normalizedName)) {
             throw new CategoryAlreadyExistsException("Category already exists with name: " + normalizedName);
@@ -34,6 +51,9 @@ public class CategoryServiceImpl implements CategoryService {
 
         Category category = new Category();
         applyRequest(category, request);
+        if (imageFile != null && !imageFile.isEmpty()) {
+            category.setImageUrl(storeImage(imageFile));
+        }
         Category savedCategory = categoryRepository.save(category);
         return mapToResponse(savedCategory);
     }
@@ -61,6 +81,12 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional
     public CategoryResponse updateCategory(Long id, CategoryRequest request) {
+        return updateCategory(id, request, null);
+    }
+
+    @Override
+    @Transactional
+    public CategoryResponse updateCategory(Long id, CategoryRequest request, MultipartFile imageFile) {
         Category category = findCategoryById(id);
         String normalizedName = request.getName().trim();
         if (categoryRepository.existsByNameIgnoreCaseAndIdNot(normalizedName, id)) {
@@ -68,6 +94,9 @@ public class CategoryServiceImpl implements CategoryService {
         }
 
         applyRequest(category, request);
+        if (imageFile != null && !imageFile.isEmpty()) {
+            category.setImageUrl(storeImage(imageFile));
+        }
         Category savedCategory = categoryRepository.save(category);
         return mapToResponse(savedCategory);
     }
@@ -91,11 +120,16 @@ public class CategoryServiceImpl implements CategoryService {
         category.setName(request.getName().trim());
         if (request.getDescription() == null) {
             category.setDescription(null);
-            return;
+        } else {
+            String normalizedDescription = request.getDescription().trim();
+            category.setDescription(normalizedDescription.isEmpty() ? null : normalizedDescription);
         }
 
-        String normalizedDescription = request.getDescription().trim();
-        category.setDescription(normalizedDescription.isEmpty() ? null : normalizedDescription);
+        if (request.getImageUrl() == null || request.getImageUrl().isBlank()) {
+            category.setImageUrl(null);
+        } else {
+            category.setImageUrl(request.getImageUrl().trim());
+        }
     }
 
     private CategoryResponse mapToResponse(Category category) {
@@ -103,6 +137,39 @@ public class CategoryServiceImpl implements CategoryService {
                 .id(category.getId())
                 .name(category.getName())
                 .description(category.getDescription())
+                .imageUrl(category.getImageUrl())
                 .build();
+    }
+
+    private String storeImage(MultipartFile imageFile) {
+        validateImage(imageFile);
+        String originalFilename = StringUtils.cleanPath(
+                imageFile.getOriginalFilename() == null ? "" : imageFile.getOriginalFilename()
+        );
+        String extension = "";
+        int dotIndex = originalFilename.lastIndexOf('.');
+        if (dotIndex >= 0) {
+            extension = originalFilename.substring(dotIndex).toLowerCase();
+        }
+
+        Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize().resolve("categories");
+        try {
+            Files.createDirectories(uploadPath);
+            String storedFileName = UUID.randomUUID() + extension;
+            imageFile.transferTo(uploadPath.resolve(storedFileName));
+            return "/uploads/categories/" + storedFileName;
+        } catch (IOException exception) {
+            throw new BadRequestException("Failed to upload category image file");
+        }
+    }
+
+    private void validateImage(MultipartFile imageFile) {
+        if (imageFile.getSize() > 5 * 1024 * 1024) {
+            throw new BadRequestException("Image file must be 5 MB or smaller");
+        }
+        String contentType = imageFile.getContentType();
+        if (contentType == null || !List.of("image/jpeg", "image/png", "image/webp", "image/gif").contains(contentType)) {
+            throw new BadRequestException("Only JPEG, PNG, WEBP, and GIF images are supported");
+        }
     }
 }

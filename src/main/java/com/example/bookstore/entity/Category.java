@@ -18,11 +18,14 @@ import java.util.Set;
 @Table(name = "categories")
 public class Category extends BaseEntity {
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, columnDefinition = "NVARCHAR(255)")
     private String name;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String description;
+
+    @Column(name = "image_url")
+    private String imageUrl;
 
     @ManyToMany(mappedBy = "categories")
     private Set<Book> books =  new HashSet<>();

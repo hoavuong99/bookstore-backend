@@ -8,6 +8,7 @@ import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Builder
@@ -21,4 +22,5 @@ public class OrderSummaryResponse {
     private PaymentMethod paymentMethod;
     private PaymentStatus paymentStatus;
     private LocalDateTime createdAt;
+    private List<OrderItemResponse> items;
 }
