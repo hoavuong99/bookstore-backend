@@ -18,6 +18,7 @@ public class CatalogSchemaMigration {
         addColumnIfMissing("books", "editors_pick", "BIT NOT NULL DEFAULT 0");
         addColumnIfMissing("categories", "image_url", "NVARCHAR(2048) NULL");
         dropColumnIfPresent("books", "rating");
+        alterToUnicodeIfNeeded("reviews", "comment", "NVARCHAR(2000) NOT NULL");
         migratePaymentMethodConstraint();
     }
 

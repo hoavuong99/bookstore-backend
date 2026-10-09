@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.math.BigDecimal;
 import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.List;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
 	Page<Order> findByUserId(Long userId, Pageable pageable);
@@ -20,4 +22,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 			where o.orderStatus = com.example.bookstore.enums.OrderStatus.DELIVERED
 			""")
 	BigDecimal sumCompletedRevenue();
+
+	List<Order> findByOrderStatusAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+			com.example.bookstore.enums.OrderStatus orderStatus,
+			LocalDateTime start,
+			LocalDateTime end
+	);
 }

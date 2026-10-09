@@ -11,6 +11,18 @@ import java.util.List;
 
 public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
 	@Query("""
+			select count(oi)
+			from OrderItem oi
+			where oi.order.user.id = :userId
+			  and oi.book.id = :bookId
+			  and oi.order.orderStatus = com.example.bookstore.enums.OrderStatus.DELIVERED
+			""")
+	long countDeliveredByUserAndBook(
+			@Param("userId") Long userId,
+			@Param("bookId") Long bookId
+	);
+
+	@Query("""
 			select oi
 			from OrderItem oi
 			join fetch oi.book b
