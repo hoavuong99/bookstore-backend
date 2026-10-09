@@ -17,7 +17,12 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     @Query("""
         select b
         from Book b
-        where (:search is null or :search = '' or lower(b.title) like lower(concat('%', :search, '%')))
+        where (
+                :search is null
+                or :search = ''
+                or lower(b.title) like lower(concat('%', :search, '%'))
+                or lower(b.authorName) like lower(concat('%', :search, '%'))
+              )
           and (:categoryId is null or exists (select category.id from Category category join category.books categorizedBook where categorizedBook.id = b.id and category.id = :categoryId))
           and (:maxPrice is null or b.price <= :maxPrice)
         """)

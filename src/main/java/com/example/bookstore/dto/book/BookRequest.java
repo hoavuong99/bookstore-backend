@@ -1,7 +1,6 @@
 package com.example.bookstore.dto.book;
 
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -41,10 +40,6 @@ public class BookRequest {
     private String description;
 
     private String imageUrl;
-
-    @DecimalMin(value = "0.0")
-    @DecimalMax(value = "5.0")
-    private BigDecimal rating;
 
     private Boolean editorsPick;
 }

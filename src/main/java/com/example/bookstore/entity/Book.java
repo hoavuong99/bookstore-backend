@@ -37,9 +37,6 @@ public class Book extends BaseEntity {
     @Column(name = "image_url")
     private String imageUrl;
 
-    @Column(precision = 2, scale = 1)
-    private BigDecimal rating;
-
     @Column(name = "editors_pick", nullable = false)
     private Boolean editorsPick = false;
 

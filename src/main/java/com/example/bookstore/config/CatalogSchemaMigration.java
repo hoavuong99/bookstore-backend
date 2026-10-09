@@ -15,9 +15,9 @@ public class CatalogSchemaMigration {
     void migrateCatalogMetadata() {
         migrateUnicodeCatalogColumns();
         addColumnIfMissing("books", "author_name", "NVARCHAR(255) NULL");
-        addColumnIfMissing("books", "rating", "DECIMAL(2, 1) NULL");
         addColumnIfMissing("books", "editors_pick", "BIT NOT NULL DEFAULT 0");
         addColumnIfMissing("categories", "image_url", "NVARCHAR(2048) NULL");
+        dropColumnIfPresent("books", "rating");
         migratePaymentMethodConstraint();
     }
 
@@ -118,6 +118,15 @@ public class CatalogSchemaMigration {
         if (columnLength == null) {
             jdbcTemplate.execute("ALTER TABLE dbo." + tableName + " ADD " + columnName + " " + definition);
         }
+    }
+
+    private void dropColumnIfPresent(String tableName, String columnName) {
+        jdbcTemplate.execute("""
+                IF COL_LENGTH('dbo.%s', '%s') IS NOT NULL
+                BEGIN
+                    ALTER TABLE dbo.%s DROP COLUMN %s;
+                END;
+                """.formatted(tableName, columnName, tableName, columnName));
     }
 
     private void migratePaymentMethodConstraint() {

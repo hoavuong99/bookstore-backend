@@ -19,6 +19,5 @@ public class BookResponse {
     private List<String> categoryNames;
     private String description;
     private String imageUrl;
-    private BigDecimal rating;
     private Boolean editorsPick;
 }

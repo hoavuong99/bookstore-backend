@@ -234,7 +234,6 @@ public class BookServiceImpl implements BookService {
             book.setImageUrl(normalizedImageUrl.isEmpty() ? null : normalizedImageUrl);
         }
 
-        book.setRating(request.getRating());
         book.setEditorsPick(Boolean.TRUE.equals(request.getEditorsPick()));
     }
 
@@ -293,7 +292,6 @@ public class BookServiceImpl implements BookService {
             .categoryNames(categoryNames)
                 .description(book.getDescription())
                 .imageUrl(book.getImageUrl())
-                .rating(book.getRating())
                 .editorsPick(book.getEditorsPick())
                 .build();
     }
